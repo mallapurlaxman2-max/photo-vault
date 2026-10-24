@@ -69,7 +69,63 @@ export default function ZeBeyondGalleryManagePage({
 
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatusText, setUploadStatusText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const optimizeImageForUpload = (file: File): Promise<Blob> => {
+    return new Promise((resolve) => {
+      if (file.type === "image/svg+xml" || file.type === "image/gif" || file.size < 400 * 1024) {
+        resolve(file);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX_DIM = 2048;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_DIM || height > MAX_DIM) {
+            if (width > height) {
+              height = Math.round((height * MAX_DIM) / width);
+              width = MAX_DIM;
+            } else {
+              width = Math.round((width * MAX_DIM) / height);
+              height = MAX_DIM;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(file);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              if (blob && blob.size < file.size) {
+                resolve(blob);
+              } else {
+                resolve(file);
+              }
+            },
+            "image/webp",
+            0.85
+          );
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
 
   const [newTitle, setNewTitle] = useState("");
   const [newClient, setNewClient] = useState("");
@@ -119,29 +175,47 @@ export default function ZeBeyondGalleryManagePage({
     if (!files || files.length === 0 || !gallery) return;
 
     setUploading(true);
-    setUploadProgress(25);
+    setUploadProgress(0);
 
-    const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      formData.append("files", files[i]);
+    const total = files.length;
+    let successful = 0;
+
+    for (let i = 0; i < total; i++) {
+      const file = files[i];
+      setUploadStatusText(`Optimizing ${i + 1}/${total}: ${file.name}...`);
+
+      try {
+        const optimizedBlob = await optimizeImageForUpload(file);
+        setUploadStatusText(`Uploading ${i + 1}/${total}...`);
+
+        const formData = new FormData();
+        const safeName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+        formData.append("files", optimizedBlob, safeName);
+
+        const res = await fetch(`/api/galleries/${gallery.id}/photos`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (res.ok) {
+          successful++;
+          // Progressive live refresh so the photo immediately appears!
+          await fetchGallery();
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          console.error("Upload error for file", file.name, errData);
+        }
+      } catch (err) {
+        console.error("Failed uploading", file.name, err);
+      }
+
+      setUploadProgress(Math.round(((i + 1) / total) * 100));
     }
 
-    try {
-      setUploadProgress(65);
-      const res = await fetch(`/api/galleries/${gallery.id}/photos`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error("Upload failed.");
-      setUploadProgress(100);
-      await fetchGallery();
-    } catch (err: any) {
-      alert(err.message || "Upload failed.");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
+    setUploading(false);
+    setUploadStatusText("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    await fetchGallery();
   };
 
   const handleSetCover = async (photoId: string) => {
@@ -334,8 +408,22 @@ export default function ZeBeyondGalleryManagePage({
             onClick={() => fileInputRef.current?.click()}
             className="w-full py-3.5 rounded-xl emerald-btn text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#00f59b]/20 cursor-pointer"
           >
-            {uploading ? `Processing Photos (${uploadProgress}%)...` : "Select Photos to Upload"}
+            {uploading ? (uploadStatusText || `Uploading (${uploadProgress}%)...`) : "Select Photos to Upload"}
           </button>
+
+          {uploading && (
+            <div className="w-full space-y-1 pt-1">
+              <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-[#00f59b] h-full transition-all duration-300 shadow-[0_0_12px_#00f59b]"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-[#00f59b] font-medium text-center">
+                {uploadStatusText || `Uploading... ${uploadProgress}%`}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Uploaded Photos Grid */}
