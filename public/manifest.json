@@ -1,7 +1,7 @@
 {
-  "name": "ZeBeyond Photo Vault",
-  "short_name": "PhotoVault",
-  "description": "Professional Photographer QR Photo Gallery & Delivery Platform",
+  "name": "BA Photo Vault",
+  "short_name": "BA Vault",
+  "description": "Professional Photographer QR Photo Gallery & Delivery Platform by LAXMAN M",
   "start_url": "/",
   "id": "/",
   "display": "standalone",

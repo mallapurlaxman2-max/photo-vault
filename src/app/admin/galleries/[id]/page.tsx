@@ -74,7 +74,7 @@ export default function ZeBeyondGalleryManagePage({
 
   const optimizeImageForUpload = (file: File): Promise<Blob> => {
     return new Promise((resolve) => {
-      if (file.type === "image/svg+xml" || file.type === "image/gif" || file.size < 400 * 1024) {
+      if (file.type === "image/svg+xml" || file.type === "image/gif") {
         resolve(file);
         return;
       }
@@ -106,17 +106,75 @@ export default function ZeBeyondGalleryManagePage({
             return;
           }
 
+          // 1. Draw base photo
           ctx.drawImage(img, 0, 0, width, height);
+
+          // 2. Draw official LAXMAN M Watermark Badge
+          const minDim = Math.min(width, height);
+          const fontSize = Math.max(16, Math.round(minDim * 0.024));
+          const text = "LAXMAN M";
+          ctx.save();
+          ctx.font = `bold ${fontSize}px system-ui, -apple-system, sans-serif`;
+          const textMetrics = ctx.measureText(text);
+          const padX = Math.round(fontSize * 0.85);
+          const padY = Math.round(fontSize * 0.42);
+          const pillW = textMetrics.width + padX * 2 + fontSize * 1.0;
+          const pillH = fontSize + padY * 2;
+          const margin = Math.round(minDim * 0.035);
+          const pillX = width - pillW - margin;
+          const pillY = height - pillH - margin;
+
+          // Shadow for maximum readability on dark or light backgrounds
+          ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
+          ctx.shadowBlur = 8;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 2;
+
+          // Dark pill background
+          ctx.fillStyle = "rgba(6, 11, 8, 0.82)";
+          ctx.beginPath();
+          if (typeof ctx.roundRect === "function") {
+            ctx.roundRect(pillX, pillY, pillW, pillH, pillH / 2);
+          } else {
+            ctx.rect(pillX, pillY, pillW, pillH);
+          }
+          ctx.fill();
+
+          // Emerald border
+          ctx.strokeStyle = "rgba(0, 245, 155, 0.5)";
+          ctx.lineWidth = Math.max(1.5, Math.round(fontSize * 0.08));
+          ctx.stroke();
+
+          // Reset shadow for crisp inner elements
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 0;
+
+          // Emerald camera dot
+          const dotRadius = fontSize * 0.22;
+          const dotX = pillX + padX + fontSize * 0.15;
+          const dotY = pillY + pillH / 2;
+          ctx.fillStyle = "#00f59b";
+          ctx.beginPath();
+          ctx.arc(dotX, dotY, dotRadius, 0, Math.PI * 2);
+          ctx.fill();
+
+          // "LAXMAN M" Text
+          ctx.fillStyle = "#ffffff";
+          ctx.textBaseline = "middle";
+          ctx.fillText(text, dotX + dotRadius * 2 + fontSize * 0.35, dotY);
+          ctx.restore();
+
           canvas.toBlob(
             (blob) => {
-              if (blob && blob.size < file.size) {
+              if (blob) {
                 resolve(blob);
               } else {
                 resolve(file);
               }
             },
             "image/webp",
-            0.85
+            0.88
           );
         };
         img.onerror = () => resolve(file);

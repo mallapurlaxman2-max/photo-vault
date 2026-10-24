@@ -39,7 +39,7 @@ interface GalleryItem {
   eventDate?: string | null;
 }
 
-export default function ZeBeyondPhotoVaultApp() {
+export default function BAPhotoVaultApp() {
   const router = useRouter();
 
   // Mode: "guest" (default) or "admin" (photographer)
@@ -52,8 +52,8 @@ export default function ZeBeyondPhotoVaultApp() {
   const [isOwnerLoggedIn, setIsOwnerLoggedIn] = useState(false);
   const [ownerData, setOwnerData] = useState<any>(null);
   const [galleries, setGalleries] = useState<GalleryItem[]>([]);
-  const [loginEmail, setLoginEmail] = useState("robert@lumierestudio.com");
-  const [loginPassword, setLoginPassword] = useState("MasterPhotographerSecret2026!");
+  const [loginEmail, setLoginEmail] = useState("mallapurlaxman2@gmail.com");
+  const [loginPassword, setLoginPassword] = useState("LaxmanPhotographer2026!");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
 
@@ -259,17 +259,17 @@ export default function ZeBeyondPhotoVaultApp() {
       {/* Background Emerald Ambient Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[450px] bg-[#00f59b]/8 blur-[140px] pointer-events-none rounded-full" />
 
-      {/* ZeBeyond Style Top Navigation Bar */}
+      {/* Top Navigation Bar */}
       <header className="sticky top-0 z-40 bg-[#060b08]/90 backdrop-blur-md border-b border-[#00f59b]/15 px-4 sm:px-8 py-3.5 flex items-center justify-between">
         {/* Brand Logo */}
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#00f59b] flex items-center justify-center text-black font-black text-base shadow-[0_0_15px_rgba(0,245,155,0.4)]">
-            Z
+          <div className="w-8 h-8 rounded-lg bg-[#00f59b] flex items-center justify-center text-black font-black text-sm tracking-tight shadow-[0_0_15px_rgba(0,245,155,0.4)]">
+            BA
           </div>
-          <Link href="/" className="font-extrabold text-lg sm:text-xl tracking-tight text-white flex items-center gap-1">
-            <span>ZeBeyond</span>
-            <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-[#00f59b]/10 text-[#00f59b] border border-[#00f59b]/30">
-              Vault
+          <Link href="/" className="font-extrabold text-lg sm:text-xl tracking-tight text-white flex items-center gap-1.5">
+            <span>BA Photo Vault</span>
+            <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-[#00f59b]/15 text-[#00f59b] border border-[#00f59b]/30">
+              LAXMAN M
             </span>
           </Link>
         </div>
@@ -605,6 +605,21 @@ export default function ZeBeyondPhotoVaultApp() {
           </div>
         )}
       </main>
+
+      {/* Footer Branding */}
+      <footer className="mt-12 border-t border-[#00f59b]/15 py-8 text-center space-y-2 relative z-10">
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-5 h-5 rounded-md bg-[#00f59b] flex items-center justify-center text-black font-black text-[10px]">
+            BA
+          </div>
+          <span className="font-extrabold text-sm tracking-tight text-white">BA Photo Vault</span>
+          <span className="text-zinc-600">•</span>
+          <span className="text-xs text-[#00f59b] font-semibold tracking-wider uppercase">LAXMAN M</span>
+        </div>
+        <p className="text-[11px] text-zinc-500">
+          Ultra-Fast QR Event Delivery &amp; Secure Vault • All photos protected with LAXMAN M Watermark
+        </p>
+      </footer>
 
       {/* ============================================================== */}
       {/* CREATE EVENT MODAL                                             */}

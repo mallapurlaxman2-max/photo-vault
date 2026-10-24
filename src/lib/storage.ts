@@ -70,10 +70,51 @@ export async function processAndSavePhoto(
       .webp({ quality: 80 })
       .toBuffer();
 
-    // 2. Display (max 1920px, WebP 85%)
-    displayBuffer = await sharp(buffer)
+    // 2. Display (max 1920px, WebP 85%) with LAXMAN M Watermark
+    const resizedDisplay = await sharp(buffer)
       .rotate()
       .resize(1920, 1920, { fit: "inside", withoutEnlargement: true })
+      .toBuffer();
+
+    const dispMeta = await sharp(resizedDisplay).metadata();
+    const dW = dispMeta.width || width;
+    const dH = dispMeta.height || height;
+    const minDim = Math.min(dW, dH);
+    const fontSize = Math.max(14, Math.round(minDim * 0.024));
+    const padX = Math.round(fontSize * 0.85);
+    const padY = Math.round(fontSize * 0.42);
+    const textW = Math.round(fontSize * 5.6);
+    const pillW = textW + padX * 2 + fontSize * 1.0;
+    const pillH = fontSize + padY * 2;
+    const margin = Math.round(minDim * 0.035);
+    const pillX = dW - pillW - margin;
+    const pillY = dH - pillH - margin;
+    const dotX = pillX + padX + fontSize * 0.15;
+    const dotY = pillY + pillH / 2;
+    const dotRadius = fontSize * 0.22;
+    const textX = dotX + dotRadius * 2 + fontSize * 0.35;
+    const textY = pillY + pillH / 2;
+
+    const svgWatermark = Buffer.from(`
+      <svg width="${dW}" height="${dH}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="wmShadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.6"/>
+          </filter>
+        </defs>
+        <g filter="url(#wmShadow)">
+          <rect x="${pillX}" y="${pillY}" width="${pillW}" height="${pillH}" rx="${pillH / 2}"
+                fill="#060b08" fill-opacity="0.82" stroke="#00f59b" stroke-opacity="0.5" stroke-width="2"/>
+          <circle cx="${dotX}" cy="${dotY}" r="${dotRadius}" fill="#00f59b"/>
+          <text x="${textX}" y="${textY}" fill="#ffffff" font-size="${fontSize}px"
+                font-family="system-ui, -apple-system, sans-serif" font-weight="700"
+                dominant-baseline="central">LAXMAN M</text>
+        </g>
+      </svg>
+    `);
+
+    displayBuffer = await sharp(resizedDisplay)
+      .composite([{ input: svgWatermark, top: 0, left: 0 }])
       .webp({ quality: 85 })
       .toBuffer();
   } catch (sharpErr) {

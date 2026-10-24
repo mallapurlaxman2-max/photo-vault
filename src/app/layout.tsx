@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ZeBeyond Photo Vault — Photographer QR Gallery",
-  description: "Simple, beautiful QR photo galleries for events, weddings, and photographers.",
+  title: "BA Photo Vault — LAXMAN M Photography",
+  description: "Ultra-fast QR photo gallery and delivery platform by LAXMAN M.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "PhotoVault",
+    title: "BA Photo Vault",
   },
   icons: {
     icon: "/icons/icon-192.png",
