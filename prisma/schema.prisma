@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Owner {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  passwordHash       String
+  name               String
+  studioName         String    @default("Lumière Fine Art Photography")
+  tagline            String    @default("Capturing Timeless Moments into Eternal Art")
+  bio                String?
+  contactEmail       String?
+  contactPhone       String?
+  websiteUrl         String?
+  instagram          String?
+  storageLimitBytes  BigInt    @default(10737418240) // 10 GB default
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model Gallery {
+  id                    String      @id @default(cuid())
+  slug                  String      @unique // public link slug, e.g. "rahul-priya-wedding-8x3f"
+  title                 String
+  clientName            String
+  eventDate             DateTime?
+  description           String?
+  passwordHash          String
+  coverPhotoId          String?
+  status                String      @default("ACTIVE") // ACTIVE, EXPIRED, DISABLED
+  expiresAt             DateTime?
+  allowDownloadOriginal Boolean     @default(true)
+  allowDownloadAll      Boolean     @default(true)
+  viewsCount            Int         @default(0)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  photos                Photo[]
+  accessLogs            AccessLog[]
+
+  @@index([slug])
+  @@index([status])
+}
+
+model Photo {
+  id           String   @id @default(cuid())
+  galleryId    String
+  gallery      Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  filename     String
+  storageKey   String
+  thumbnailKey String
+  mimeType     String
+  sizeBytes    Int
+  width        Int?
+  height       Int?
+  caption      String?
+  sortOrder    Int      @default(0)
+  isCover      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([galleryId])
+  @@index([sortOrder])
+}
+
+model AccessLog {
+  id        String   @id @default(cuid())
+  galleryId String
+  gallery   Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  ipHash    String?
+  userAgent String?
+  status    String   // SUCCESS, FAILED_PASSWORD, BLOCKED
+  createdAt DateTime @default(now())
+
+  @@index([galleryId])
+}
+
+model RateLimitRecord {
+  id          String   @id @default(cuid())
+  key         String   @unique // e.g. "gallery:slug:192.168.1.1"
+  attempts    Int      @default(0)
+  lockedUntil DateTime?
+  updatedAt   DateTime @updatedAt
+}
