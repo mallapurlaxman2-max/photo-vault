@@ -69,6 +69,31 @@ export default function ZeBeyondPhotoVaultApp() {
   const [qrPng, setQrPng] = useState<string | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
 
+  // PWA Install Prompt for Android
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [canInstall, setCanInstall] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanInstall(true);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") setCanInstall(false);
+      setDeferredPrompt(null);
+    } else {
+      alert("To install on your Android phone:\n1. Tap the 3 dots (⋮) in your Chrome browser\n2. Tap 'Install app' or 'Add to Home screen'\n\nIt installs directly onto your phone as a native app!");
+    }
+  };
+
   // Check auth & fetch galleries
   const checkAuth = async () => {
     try {
@@ -250,7 +275,16 @@ export default function ZeBeyondPhotoVaultApp() {
         </div>
 
         {/* Right Action Switcher */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleInstallClick}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#00f59b]/10 text-[#00f59b] border border-[#00f59b]/30 hover:bg-[#00f59b]/20 flex items-center gap-1.5 cursor-pointer transition-all"
+            title="Install Android App"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden xs:inline sm:inline">Install App</span>
+          </button>
+
           <button
             onClick={() => setActiveTab(activeTab === "guest" ? "admin" : "guest")}
             className={`px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${

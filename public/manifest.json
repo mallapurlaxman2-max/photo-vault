@@ -1,0 +1,32 @@
+{
+  "name": "ZeBeyond Photo Vault",
+  "short_name": "PhotoVault",
+  "description": "Professional Photographer QR Photo Gallery & Delivery Platform",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#060b08",
+  "theme_color": "#060b08",
+  "orientation": "portrait",
+  "categories": ["photography", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
