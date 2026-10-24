@@ -17,7 +17,7 @@ async function main() {
       data: {
         email,
         passwordHash: passHash,
-        name: "Laxman",
+        name: "Laxman M",
         studioName: "Laxman Photography Studio",
         tagline: "Capturing Life's Most Beautiful Moments",
       }
@@ -26,9 +26,13 @@ async function main() {
   } else {
     await prisma.owner.update({
       where: { email },
-      data: { passwordHash: passHash }
+      data: {
+        passwordHash: passHash,
+        name: "Laxman M",
+        studioName: "Laxman Photography Studio"
+      }
     });
-    console.log("✓ Owner password updated:", owner.email);
+    console.log("✓ Owner updated:", owner.email, "name: Laxman M");
   }
 
   // Create demo gallery if none
