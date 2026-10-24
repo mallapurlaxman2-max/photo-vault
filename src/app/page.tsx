@@ -48,10 +48,33 @@ export default function BAPhotoVaultApp() {
   const [searchFilter, setSearchFilter] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
-  // Admin state
-  const [isOwnerLoggedIn, setIsOwnerLoggedIn] = useState(false);
-  const [ownerData, setOwnerData] = useState<any>(null);
-  const [galleries, setGalleries] = useState<GalleryItem[]>([]);
+  // Admin state with instant localStorage caching for zero restart delay
+  const [isOwnerLoggedIn, setIsOwnerLoggedIn] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return Boolean(localStorage.getItem("ba_vault_owner_logged_in"));
+    }
+    return false;
+  });
+
+  const [ownerData, setOwnerData] = useState<any>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("ba_vault_owner");
+        return cached ? JSON.parse(cached) : null;
+      } catch {}
+    }
+    return null;
+  });
+
+  const [galleries, setGalleries] = useState<GalleryItem[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("ba_vault_galleries");
+        return cached ? JSON.parse(cached) : [];
+      } catch {}
+    }
+    return [];
+  });
   const [loginEmail, setLoginEmail] = useState("mallapurlaxman2@gmail.com");
   const [loginPassword, setLoginPassword] = useState("LaxmanPhotographer2026!");
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -90,11 +113,11 @@ export default function BAPhotoVaultApp() {
       if (outcome === "accepted") setCanInstall(false);
       setDeferredPrompt(null);
     } else {
-      alert("To install on your Android phone:\n1. Tap the 3 dots (⋮) in your Chrome browser\n2. Tap 'Install app' or 'Add to Home screen'\n\nIt installs directly onto your phone as a native app!");
+      window.location.href = "/BA-Photo-Vault.apk";
     }
   };
 
-  // Check auth & fetch galleries
+  // Check auth & fetch galleries with instant cache synchronization
   const checkAuth = async () => {
     try {
       const res = await fetch("/api/auth/me");
@@ -102,12 +125,20 @@ export default function BAPhotoVaultApp() {
       if (data.authenticated) {
         setIsOwnerLoggedIn(true);
         setOwnerData(data.owner);
+        try {
+          localStorage.setItem("ba_vault_owner_logged_in", "true");
+          localStorage.setItem("ba_vault_owner", JSON.stringify(data.owner));
+        } catch {}
         fetchGalleries();
       } else {
         setIsOwnerLoggedIn(false);
+        try {
+          localStorage.removeItem("ba_vault_owner_logged_in");
+          localStorage.removeItem("ba_vault_owner");
+        } catch {}
       }
     } catch {
-      setIsOwnerLoggedIn(false);
+      // Keep cached state if offline or network blip
     }
   };
 
@@ -115,8 +146,11 @@ export default function BAPhotoVaultApp() {
     try {
       const res = await fetch("/api/galleries");
       const data = await res.json();
-      if (res.ok) {
-        setGalleries(data.galleries || []);
+      if (res.ok && data.galleries) {
+        setGalleries(data.galleries);
+        try {
+          localStorage.setItem("ba_vault_galleries", JSON.stringify(data.galleries));
+        } catch {}
       }
     } catch (err) {
       console.error(err);

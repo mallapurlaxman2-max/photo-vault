@@ -54,21 +54,21 @@ export async function generateQRCodeSvg(
 }
 
 export function getFullGalleryUrl(slug: string, reqHost?: string | null): string {
-  // If request host is provided, dynamically use it (e.g. 10.23.109.16:3000 or custom domain)
-  if (reqHost && !reqHost.includes("localhost")) {
-    const proto = reqHost.includes("loca.lt") || reqHost.includes("vercel.app") ? "https" : "http";
+  // If request host is provided and NOT localhost, dynamically use it
+  if (reqHost && !reqHost.includes("localhost") && !reqHost.startsWith("127.")) {
+    const proto = reqHost.includes("vercel.app") || !reqHost.includes(":") ? "https" : "http";
     return `${proto}://${reqHost}/g/${slug}`;
   }
 
   const envUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-  if (envUrl && !envUrl.includes("localhost")) {
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.startsWith("http://127.")) {
     return `${envUrl}/g/${slug}`;
   }
 
-  // Fallback: If running on local Wi-Fi, prefer network host or default
-  if (reqHost) {
-    return `http://${reqHost}/g/${slug}`;
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}/g/${slug}`;
   }
 
-  return `${envUrl || "http://localhost:3000"}/g/${slug}`;
+  // Official production URL for BA Photo Vault
+  return `https://photo-vault-phrx.vercel.app/g/${slug}`;
 }

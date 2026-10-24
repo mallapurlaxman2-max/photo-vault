@@ -98,7 +98,9 @@ export default function ZeBeyondCustomerGallery({
       setGallery(data.gallery);
       setIsUnlocked(data.gallery.isUnlocked);
 
-      if (data.gallery.isUnlocked) {
+      if (data.photos && data.photos.length > 0) {
+        setPhotos(data.photos);
+      } else if (data.gallery.isUnlocked) {
         const photoRes = await fetch(`/api/public/gallery/${slug}/photos`);
         const photoData = await photoRes.json();
         if (photoRes.ok) {

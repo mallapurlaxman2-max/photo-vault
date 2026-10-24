@@ -72,117 +72,130 @@ export default function ZeBeyondGalleryManagePage({
   const [uploadStatusText, setUploadStatusText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const optimizeImageForUpload = (file: File): Promise<Blob> => {
-    return new Promise((resolve) => {
-      if (file.type === "image/svg+xml" || file.type === "image/gif") {
-        resolve(file);
-        return;
+  const optimizeImageForUpload = async (file: File): Promise<Blob> => {
+    if (file.type === "image/svg+xml" || file.type === "image/gif") {
+      return file;
+    }
+
+    try {
+      let imgBitmap: ImageBitmap | null = null;
+      if (typeof createImageBitmap === "function") {
+        try {
+          imgBitmap = await createImageBitmap(file);
+        } catch {}
       }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const MAX_DIM = 2048;
-          let width = img.width;
-          let height = img.height;
+      let width = imgBitmap ? imgBitmap.width : 1920;
+      let height = imgBitmap ? imgBitmap.height : 1080;
 
-          if (width > MAX_DIM || height > MAX_DIM) {
-            if (width > height) {
-              height = Math.round((height * MAX_DIM) / width);
-              width = MAX_DIM;
-            } else {
-              width = Math.round((width * MAX_DIM) / height);
-              height = MAX_DIM;
-            }
-          }
+      let htmlImg: HTMLImageElement | null = null;
+      if (!imgBitmap) {
+        htmlImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = e.target?.result as string;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        width = htmlImg.width;
+        height = htmlImg.height;
+      }
 
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            resolve(file);
-            return;
-          }
+      const MAX_DIM = 2048;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        if (width > height) {
+          height = Math.round((height * MAX_DIM) / width);
+          width = MAX_DIM;
+        } else {
+          width = Math.round((width * MAX_DIM) / height);
+          height = MAX_DIM;
+        }
+      }
 
-          // 1. Draw base photo
-          ctx.drawImage(img, 0, 0, width, height);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return file;
 
-          // 2. Draw official LAXMAN M Watermark Badge
-          const minDim = Math.min(width, height);
-          const fontSize = Math.max(16, Math.round(minDim * 0.024));
-          const text = "LAXMAN M";
-          ctx.save();
-          ctx.font = `bold ${fontSize}px system-ui, -apple-system, sans-serif`;
-          const textMetrics = ctx.measureText(text);
-          const padX = Math.round(fontSize * 0.85);
-          const padY = Math.round(fontSize * 0.42);
-          const pillW = textMetrics.width + padX * 2 + fontSize * 1.0;
-          const pillH = fontSize + padY * 2;
-          const margin = Math.round(minDim * 0.035);
-          const pillX = width - pillW - margin;
-          const pillY = height - pillH - margin;
+      // 1. Draw base photo
+      if (imgBitmap) {
+        ctx.drawImage(imgBitmap, 0, 0, width, height);
+        imgBitmap.close();
+      } else if (htmlImg) {
+        ctx.drawImage(htmlImg, 0, 0, width, height);
+      }
 
-          // Shadow for maximum readability on dark or light backgrounds
-          ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
-          ctx.shadowBlur = 8;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 2;
+      // 2. Draw official LAXMAN M Watermark Badge
+      const minDim = Math.min(width, height);
+      const fontSize = Math.max(16, Math.round(minDim * 0.024));
+      const text = "LAXMAN M";
+      ctx.save();
+      ctx.font = `bold ${fontSize}px system-ui, -apple-system, sans-serif`;
+      const textMetrics = ctx.measureText(text);
+      const padX = Math.round(fontSize * 0.85);
+      const padY = Math.round(fontSize * 0.42);
+      const pillW = textMetrics.width + padX * 2 + fontSize * 1.0;
+      const pillH = fontSize + padY * 2;
+      const margin = Math.round(minDim * 0.035);
+      const pillX = width - pillW - margin;
+      const pillY = height - pillH - margin;
 
-          // Dark pill background
-          ctx.fillStyle = "rgba(6, 11, 8, 0.82)";
-          ctx.beginPath();
-          if (typeof ctx.roundRect === "function") {
-            ctx.roundRect(pillX, pillY, pillW, pillH, pillH / 2);
-          } else {
-            ctx.rect(pillX, pillY, pillW, pillH);
-          }
-          ctx.fill();
+      // Shadow for maximum readability on dark or light backgrounds
+      ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 2;
 
-          // Emerald border
-          ctx.strokeStyle = "rgba(0, 245, 155, 0.5)";
-          ctx.lineWidth = Math.max(1.5, Math.round(fontSize * 0.08));
-          ctx.stroke();
+      // Dark pill background
+      ctx.fillStyle = "rgba(6, 11, 8, 0.82)";
+      ctx.beginPath();
+      if (typeof ctx.roundRect === "function") {
+        ctx.roundRect(pillX, pillY, pillW, pillH, pillH / 2);
+      } else {
+        ctx.rect(pillX, pillY, pillW, pillH);
+      }
+      ctx.fill();
 
-          // Reset shadow for crisp inner elements
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 0;
+      // Emerald border
+      ctx.strokeStyle = "rgba(0, 245, 155, 0.5)";
+      ctx.lineWidth = Math.max(1.5, Math.round(fontSize * 0.08));
+      ctx.stroke();
 
-          // Emerald camera dot
-          const dotRadius = fontSize * 0.22;
-          const dotX = pillX + padX + fontSize * 0.15;
-          const dotY = pillY + pillH / 2;
-          ctx.fillStyle = "#00f59b";
-          ctx.beginPath();
-          ctx.arc(dotX, dotY, dotRadius, 0, Math.PI * 2);
-          ctx.fill();
+      // Reset shadow for crisp inner elements
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
 
-          // "LAXMAN M" Text
-          ctx.fillStyle = "#ffffff";
-          ctx.textBaseline = "middle";
-          ctx.fillText(text, dotX + dotRadius * 2 + fontSize * 0.35, dotY);
-          ctx.restore();
+      // Emerald camera dot
+      const dotRadius = fontSize * 0.22;
+      const dotX = pillX + padX + fontSize * 0.15;
+      const dotY = pillY + pillH / 2;
+      ctx.fillStyle = "#00f59b";
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, dotRadius, 0, Math.PI * 2);
+      ctx.fill();
 
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                resolve(blob);
-              } else {
-                resolve(file);
-              }
-            },
-            "image/webp",
-            0.88
-          );
-        };
-        img.onerror = () => resolve(file);
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = () => resolve(file);
-      reader.readAsDataURL(file);
-    });
+      // "LAXMAN M" Text
+      ctx.fillStyle = "#ffffff";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, dotX + dotRadius * 2 + fontSize * 0.35, dotY);
+      ctx.restore();
+
+      return await new Promise<Blob>((resolve) => {
+        canvas.toBlob(
+          (blob) => resolve(blob || file),
+          "image/webp",
+          0.85
+        );
+      });
+    } catch {
+      return file;
+    }
   };
 
   const [newTitle, setNewTitle] = useState("");
@@ -235,45 +248,68 @@ export default function ZeBeyondGalleryManagePage({
     setUploading(true);
     setUploadProgress(0);
 
-    const total = files.length;
+    const fileList = Array.from(files);
+    const total = fileList.length;
+    let completed = 0;
     let successful = 0;
 
-    for (let i = 0; i < total; i++) {
-      const file = files[i];
-      setUploadStatusText(`Optimizing ${i + 1}/${total}: ${file.name}...`);
+    // 4 parallel upload workers for lightning-fast batch processing
+    const CONCURRENCY = Math.min(4, total);
+    let currentIndex = 0;
 
-      try {
-        const optimizedBlob = await optimizeImageForUpload(file);
-        setUploadStatusText(`Uploading ${i + 1}/${total}...`);
+    const worker = async () => {
+      while (currentIndex < total) {
+        const index = currentIndex++;
+        const file = fileList[index];
 
-        const formData = new FormData();
-        const safeName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
-        formData.append("files", optimizedBlob, safeName);
+        try {
+          setUploadStatusText(`Uploading ${completed + 1}/${total}: ${file.name}...`);
+          const optimizedBlob = await optimizeImageForUpload(file);
 
-        const res = await fetch(`/api/galleries/${gallery.id}/photos`, {
-          method: "POST",
-          body: formData,
-        });
+          const formData = new FormData();
+          const safeName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+          formData.append("files", optimizedBlob, safeName);
 
-        if (res.ok) {
-          successful++;
-          // Progressive live refresh so the photo immediately appears!
-          await fetchGallery();
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          console.error("Upload error for file", file.name, errData);
+          const res = await fetch(`/api/galleries/${gallery.id}/photos`, {
+            method: "POST",
+            body: formData,
+          });
+
+          if (res.ok) {
+            successful++;
+            const data = await res.json().catch(() => ({}));
+            // Optimistically append new photos to gallery in real-time!
+            if (data.photos && data.photos.length > 0) {
+              setGallery((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  photos: [...prev.photos, ...data.photos],
+                };
+              });
+            }
+          } else {
+            console.error("Upload error for file", file.name);
+          }
+        } catch (err) {
+          console.error("Failed uploading", file.name, err);
+        } finally {
+          completed++;
+          setUploadProgress(Math.round((completed / total) * 100));
         }
-      } catch (err) {
-        console.error("Failed uploading", file.name, err);
       }
+    };
 
-      setUploadProgress(Math.round(((i + 1) / total) * 100));
-    }
+    // Run 4 workers concurrently
+    await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
+
+    // Single final background reconciliation sync
+    setUploadStatusText("Finalizing gallery sync...");
+    await fetchGallery();
 
     setUploading(false);
     setUploadStatusText("");
     if (fileInputRef.current) fileInputRef.current.value = "";
-    await fetchGallery();
   };
 
   const handleSetCover = async (photoId: string) => {

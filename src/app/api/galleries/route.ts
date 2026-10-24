@@ -27,6 +27,7 @@ export async function GET(request: Request) {
         },
       });
 
+      const reqHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
       return NextResponse.json({
         galleries: publicGalleries.map((g) => ({
           id: g.id,
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
           coverPhotoId: g.coverPhotoId,
           status: g.status,
           photoCount: g._count.photos,
-          publicUrl: `/g/${g.slug}`,
+          publicUrl: getFullGalleryUrl(g.slug, reqHost),
         })),
       });
     }
@@ -149,6 +150,7 @@ export async function POST(request: Request) {
         },
       });
 
+      const reqHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
       return NextResponse.json({
         galleries: publicGalleries.map((g) => ({
           id: g.id,
@@ -159,7 +161,7 @@ export async function POST(request: Request) {
           coverPhotoId: g.coverPhotoId,
           status: g.status,
           photoCount: g._count.photos,
-          publicUrl: `/g/${g.slug}`,
+          publicUrl: getFullGalleryUrl(g.slug, reqHost),
         })),
       });
     }

@@ -26,7 +26,31 @@ export async function GET(request: Request, { params }: Params) {
     const isDisabled = gallery.status === "DISABLED";
 
     const isOwner = Boolean(await getOwnerSession());
-    const isUnlocked = isOwner || (await verifyGalleryGuestSession(gallery.id));
+    const isUnlocked = await verifyGalleryGuestSession(gallery.id);
+
+    // If unlocked, fetch all photos immediately in this single request for maximum speed
+    let photos: any[] = [];
+    if (isUnlocked) {
+      const dbPhotos = await prisma.photo.findMany({
+        where: { galleryId: gallery.id },
+        orderBy: { sortOrder: "asc" },
+      });
+      photos = dbPhotos.map((p) => ({
+        id: p.id,
+        filename: p.filename,
+        sizeBytes: p.sizeBytes,
+        width: p.width,
+        height: p.height,
+        caption: p.caption,
+        sortOrder: p.sortOrder,
+        isCover: p.isCover,
+        thumbnailUrl: `/api/public/gallery/${gallery.slug}/photo/${p.id}?type=thumbnail`,
+        displayUrl: `/api/public/gallery/${gallery.slug}/photo/${p.id}?type=display`,
+        downloadUrl: gallery.allowDownloadOriginal
+          ? `/api/public/gallery/${gallery.slug}/download/${p.id}`
+          : null,
+      }));
+    }
 
     // Get cover photo thumbnail URL safely
     let coverThumbnailUrl: string | null = null;
@@ -55,6 +79,7 @@ export async function GET(request: Request, { params }: Params) {
     });
 
     return NextResponse.json({
+      photos,
       gallery: {
         id: gallery.id,
         slug: gallery.slug,

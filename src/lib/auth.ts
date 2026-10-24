@@ -83,10 +83,6 @@ export async function getOwnerSession(): Promise<{ id: string; email: string; na
 // Helper to check if caller has valid guest unlock token for a specific gallery
 export async function verifyGalleryGuestSession(galleryId: string): Promise<boolean> {
   try {
-    // If owner is logged in, owner automatically has access
-    const owner = await getOwnerSession();
-    if (owner) return true;
-
     const cookieStore = await cookies();
     const cookieName = `g_session_${galleryId}`;
     const token = cookieStore.get(cookieName)?.value;

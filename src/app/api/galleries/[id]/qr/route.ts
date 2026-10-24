@@ -27,7 +27,8 @@ export async function GET(request: Request, { params }: Params) {
       return NextResponse.json({ error: "Gallery not found" }, { status: 404 });
     }
 
-    const publicUrl = getFullGalleryUrl(gallery.slug);
+    const reqHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
+    const publicUrl = getFullGalleryUrl(gallery.slug, reqHost);
 
     if (format === "svg") {
       const svg = await generateQRCodeSvg(publicUrl, { width: 1200, margin: 2 });
