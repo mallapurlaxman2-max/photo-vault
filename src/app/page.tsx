@@ -276,14 +276,15 @@ export default function BAPhotoVaultApp() {
 
         {/* Right Action Switcher */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleInstallClick}
-            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#00f59b]/10 text-[#00f59b] border border-[#00f59b]/30 hover:bg-[#00f59b]/20 flex items-center gap-1.5 cursor-pointer transition-all"
-            title="Install Android App"
+          <a
+            href="/BA-Photo-Vault.apk"
+            download="BA-Photo-Vault.apk"
+            className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#00f59b]/15 text-[#00f59b] border border-[#00f59b]/40 hover:bg-[#00f59b]/25 flex items-center gap-1.5 cursor-pointer transition-all shadow-[0_0_12px_rgba(0,245,155,0.25)]"
+            title="Direct Android APK Download"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline sm:inline">Install App</span>
-          </button>
+            <Download className="w-3.5 h-3.5 text-[#00f59b]" />
+            <span>Download APK</span>
+          </a>
 
           <button
             onClick={() => setActiveTab(activeTab === "guest" ? "admin" : "guest")}
